@@ -6,13 +6,13 @@
 
     <!-- SEO Meta Tags -->
     <title>ระบบ QR & Short URL</title>
-    <meta name="description" content="ระบบ QR & Short URL สำหรับสำนักจัดการทรัพยากรป่าไม้ที่ 7 (ขอนแก่น)">
-    <meta name="keywords" content="QR & Short URL, รายงาน, ป่าไม้, ทรัพยากรป่าไม้">
+    <meta name="description" content="ระบบ QR & ปฏิทินการจองห้องประชุม สำหรับสำนักจัดการทรัพยากรป่าไม้ที่ 7 (ขอนแก่น)">
+    <meta name="keywords" content="ปฏิทินการจองห้องประชุม, รายงาน, ป่าไม้, ทรัพยากรป่าไม้">
     <meta name="author" content="สำนักจัดการทรัพยากรป่าไม้ที่ 7">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="ระบบ QR & Short URL">
+    <meta property="og:title" content="ระบบปฏิทินการจองห้องประชุม">
     <meta property="og:description" content="ระบบรายงานสำหรับสำนักจัดการทรัพยากรป่าไม้ที่ 7">
 
     <!-- Favicon -->
@@ -62,7 +62,7 @@
         // 💡 ดึงพารามิเตอร์จาก URL ของ GitHub (ถ้ามี) ไปต่อท้าย Google Apps Script
         // ช่วยให้ถ้ามีคนเข้าโดเมน Github พร้อม ?id=xxx ระบบจะส่งต่อไปได้ถูกต้อง
         const urlParams = window.location.search;
-        const gasUrl = "https://script.google.com/macros/s/AKfycbyH-CVE8MWkjyPKOJqwHhR6lvcrzR2HN4VL1HuO2cPEFWEfpmYaZR0Xf7DGsK4f0myQ/exec" + urlParams;
+        const gasUrl = "https://script.google.com/macros/s/AKfycbzpSkv2IhclH2bRKJTxqHdbPgRuX4id0ht0ZB1eusgieZskHmM8LMRSbhbHkLN9qpk1pQ/exec" + urlParams;
         
         document.getElementById("main-frame").src = gasUrl;
     </script>
