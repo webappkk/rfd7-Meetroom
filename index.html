@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta Tags -->
+    <title>ระบบ QR & Short URL</title>
+    <meta name="description" content="ระบบ QR & Short URL สำหรับสำนักจัดการทรัพยากรป่าไม้ที่ 7 (ขอนแก่น)">
+    <meta name="keywords" content="QR & Short URL, รายงาน, ป่าไม้, ทรัพยากรป่าไม้">
+    <meta name="author" content="สำนักจัดการทรัพยากรป่าไม้ที่ 7">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="ระบบ QR & Short URL">
+    <meta property="og:description" content="ระบบรายงานสำหรับสำนักจัดการทรัพยากรป่าไม้ที่ 7">
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2316a34a'><path d='M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2zM15 15h2v2h-2zM13 17h2v2h-2zM17 17h2v2h-2zM19 19h2v2h-2zM15 19h2v2h-2zM17 13h2v2h-2zM19 15h2v2h-2z'/></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2316a34a'><path d='M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2zM15 15h2v2h-2zM13 17h2v2h-2zM17 17h2v2h-2zM19 19h2v2h-2zM15 19h2v2h-2zM17 13h2v2h-2zM19 15h2v2h-2z'/></svg>">
+    <meta name="theme-color" content="#16a34a">
+
+    <style>
+        /* ✅ รีเซ็ตทุก margin/padding และกำหนด height เต็มจอ */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* ป้องกัน scrollbar ซ้อน */
+        }
+
+        /* ✅ iframe เต็มจอสมบูรณ์ */
+        #main-frame {
+            position: fixed;  /* fixed ดีกว่า absolute — ไม่ขยับตาม scroll */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            background: #f3f4f6; /* สีพื้นหลังระหว่างรอโหลด */
+        }
+    </style>
+</head>
+<body>
+    <!-- 💡 เพิ่ม allow และ sandbox เพื่อปลดล็อกสิทธิ์ให้ Google Apps Script ทำงานในกรอบได้อย่างสมบูรณ์ -->
+    <iframe
+        id="main-frame"
+        allowfullscreen
+        allow="clipboard-read; clipboard-write"
+        sandbox="allow-top-navigation allow-top-navigation-by-user-activation allow-scripts allow-same-origin allow-forms allow-popups"
+        loading="eager"
+        title="ระบบ QR & Short URL"
+    ></iframe>
+
+    <script>
+        // 💡 ดึงพารามิเตอร์จาก URL ของ GitHub (ถ้ามี) ไปต่อท้าย Google Apps Script
+        // ช่วยให้ถ้ามีคนเข้าโดเมน Github พร้อม ?id=xxx ระบบจะส่งต่อไปได้ถูกต้อง
+        const urlParams = window.location.search;
+        const gasUrl = "https://script.google.com/macros/s/AKfycbyH-CVE8MWkjyPKOJqwHhR6lvcrzR2HN4VL1HuO2cPEFWEfpmYaZR0Xf7DGsK4f0myQ/exec" + urlParams;
+        
+        document.getElementById("main-frame").src = gasUrl;
+    </script>
+</body>
+</html>
