@@ -1,822 +1,108 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบจองห้องประชุม</title>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <?!= include('Stylesheet'); ?>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta Tags -->
+    <title>ปฏิทินการจองห้องประชุม</title>
+    <meta name="description" content="ระบบ ปฏิทินการจองห้องประชุม สำหรับสำนักจัดการทรัพยากรป่าไม้ที่ 7 (ขอนแก่น)">
+    <meta name="keywords" content="ปฏิทินการจองห้องประชุม, รายงาน, ป่าไม้, ทรัพยากรป่าไม้">
+    <meta name="author" content="สำนักจัดการทรัพยากรป่าไม้ที่ 7">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="ระบบปฏิทินการจองห้องประชุม">
+    <meta property="og:description" content="ระบบรายงานสำหรับสำนักจัดการทรัพยากรป่าไม้ที่ 7">
+
+<!-- 3D Calendar Favicon -->
+<link rel="icon" href="data:image/svg+xml,
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
+  <defs>
+    <linearGradient id='g1' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='%23ff6b6b'/>
+      <stop offset='100%' stop-color='%23ffb347'/>
+    </linearGradient>
+
+    <linearGradient id='g2' x1='0' y1='0' x2='0' y2='1'>
+      <stop offset='0%' stop-color='%23ffffff'/>
+      <stop offset='100%' stop-color='%23dbeafe'/>
+    </linearGradient>
+
+    <filter id='shadow' x='-20%' y='-20%' width='140%' height='140%'>
+      <feDropShadow dx='0' dy='4' stdDeviation='3' flood-color='%23000000' flood-opacity='0.35'/>
+    </filter>
+  </defs>
+
+  <!-- Body -->
+  <rect x='8' y='12' width='48' height='44' rx='10'
+        fill='url(%23g2)' filter='url(%23shadow)'/>
+
+  <!-- Header -->
+  <rect x='8' y='12' width='48' height='14' rx='10'
+        fill='url(%23g1)'/>
+
+  <!-- Rings -->
+  <rect x='18' y='6' width='6' height='12' rx='3' fill='%23444'/>
+  <rect x='40' y='6' width='6' height='12' rx='3' fill='%23444'/>
+
+  <!-- Date squares -->
+  <rect x='18' y='32' width='8' height='8' rx='2' fill='%2360a5fa'/>
+  <rect x='30' y='32' width='8' height='8' rx='2' fill='%23f87171'/>
+  <rect x='42' y='32' width='8' height='8' rx='2' fill='%23facc15'/>
+
+  <rect x='18' y='44' width='8' height='8' rx='2' fill='%2334d399'/>
+  <rect x='30' y='44' width='8' height='8' rx='2' fill='%23a78bfa'/>
+  <rect x='42' y='44' width='8' height='8' rx='2' fill='%23fb923c'/>
+</svg>">
+
+<meta name="theme-color" content="#ff6b6b">
+
+    <style>
+        /* ✅ รีเซ็ตทุก margin/padding และกำหนด height เต็มจอ */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* ป้องกัน scrollbar ซ้อน */
+        }
+
+        /* ✅ iframe เต็มจอสมบูรณ์ */
+        #main-frame {
+            position: fixed;  /* fixed ดีกว่า absolute — ไม่ขยับตาม scroll */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            background: #f3f4f6; /* สีพื้นหลังระหว่างรอโหลด */
+        }
+    </style>
 </head>
 <body>
+    <!-- 💡 เพิ่ม allow และ sandbox เพื่อปลดล็อกสิทธิ์ให้ Google Apps Script ทำงานในกรอบได้อย่างสมบูรณ์ -->
+    <iframe
+        id="main-frame"
+        allowfullscreen
+        allow="clipboard-read; clipboard-write"
+        sandbox="allow-top-navigation allow-top-navigation-by-user-activation allow-scripts allow-same-origin allow-forms allow-popups"
+        loading="eager"
+        title="ระบบ QR & Short URL"
+    ></iframe>
 
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="spinner"></div>
-  <p style="color:#1a3a5c;font-weight:600;">กำลังโหลด...</p>
-</div>
-
-<div id="toastContainer"></div>
-
-<div id="loginPage" style="display:none;">
-  <div class="login-card" style="max-width:460px;">
-    <div class="login-logo"><i class="fas fa-building"></i></div>
-    <div class="login-title">ระบบจองห้องประชุม</div>
-    <div class="login-subtitle">Meeting Room Booking System</div>
-
-    <div class="auth-tabs">
-      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">
-        <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ
-      </button>
-      <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">
-        <i class="fas fa-user-plus"></i> สมัครสมาชิก
-      </button>
-    </div>
-
-    <div class="auth-panel active" id="panelLogin">
-      <div class="form-group">
-        <label>อีเมล</label>
-        <input type="email" id="loginEmail" placeholder="กรอกอีเมลของท่าน" autocomplete="email">
-      </div>
-      <div class="form-group">
-        <label>รหัสผ่าน</label>
-        <input type="password" id="loginPassword" placeholder="กรอกรหัสผ่าน" autocomplete="current-password">
-      </div>
-      <div class="login-error" id="loginError">
-        <i class="fas fa-exclamation-circle"></i>
-        <span id="loginErrorMsg"></span>
-      </div>
-      <button class="btn-login" id="loginBtn" onclick="doLogin()">
-        <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ
-      </button>
-    </div>
-
-    <div class="auth-panel" id="panelRegister">
-      <div class="form-group">
-        <label>ชื่อ-นามสกุล <span style="color:red;">*</span></label>
-        <input type="text" id="regName" placeholder="กรอกชื่อ-นามสกุล" maxlength="100">
-      </div>
-      <div class="form-group">
-        <label>อีเมล <span style="color:red;">*</span></label>
-        <input type="email" id="regEmail" placeholder="กรอกอีเมลของท่าน">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="form-group" style="margin-bottom:0;">
-          <label>รหัสผ่าน <span style="color:red;">*</span></label>
-          <input type="password" id="regPassword" placeholder="อย่างน้อย 6 ตัว">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label>ยืนยันรหัสผ่าน <span style="color:red;">*</span></label>
-          <input type="password" id="regPasswordConfirm" placeholder="กรอกซ้ำ">
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;">
-        <div class="form-group" style="margin-bottom:0;">
-          <label>แผนก/หน่วยงาน</label>
-          <input type="text" id="regDepartment" placeholder="เช่น IT, บัญชี" maxlength="100">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label>เบอร์โทรศัพท์</label>
-          <input type="tel" id="regPhone" placeholder="เช่น 081-234-5678" maxlength="20">
-        </div>
-      </div>
-      <div style="background:#ebf4ff;border-radius:8px;padding:10px 14px;font-size:12px;color:#2b6cb0;margin:14px 0 4px;display:flex;align-items:flex-start;gap:8px;">
-        <i class="fas fa-info-circle" style="margin-top:2px;flex-shrink:0;"></i>
-        <span>หลังสมัครสมาชิก บัญชีของท่านจะรออนุมัติจาก Admin ก่อนสามารถเข้าใช้งานได้</span>
-      </div>
-      <div class="login-error" id="regError">
-        <i class="fas fa-exclamation-circle"></i>
-        <span id="regErrorMsg"></span>
-      </div>
-      <button class="btn-login" id="registerBtn" onclick="doRegister()" style="margin-top:10px;">
-        <i class="fas fa-user-plus"></i> สมัครสมาชิก
-      </button>
-    </div>
-
-    <div style="margin-top:16px;">
-      <button onclick="showPublicCalendar()" style="background:none;border:none;color:#0d6efd;font-size:13px;font-family:'Sarabun',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:8px 0;text-decoration:underline;">
-        <i class="fas fa-calendar-alt"></i> ดูปฏิทินการจองโดยไม่ต้องล็อกอิน
-      </button>
-    </div>
-    <p style="margin-top:12px;font-size:12px;color:#a0aec0;">สำนักจัดการทรัพยากรป่าไม้ที่ 7 (ขอนแก่น)</p>
-    <p style="margin-top:12px;font-size:12px;color:#a0aec0;">© 2026 TK SENSE</p>
-  </div>
-</div>
-
-<div id="publicCalendar">
-  <div class="pub-topbar">
-    <div class="pub-topbar-left">
-      <div class="pub-topbar-logo"><i class="fas fa-calendar-check"></i></div>
-      <div>
-        <div class="pub-topbar-title">ปฏิทินการจองห้องประชุม</div>
-        <div class="pub-topbar-sub"></div>
-      </div>
-    </div>
-    <div class="pub-topbar-right">
-      <span style="font-size:13px;color:rgba(255,255,255,0.75);" id="pubTopbarDate"></span>
-      <button class="btn-pub-login" onclick="backToLogin()" title="เปิดหน้าเข้าสู่ระบบในแท็บใหม่">
-        <i class="fas fa-sign-in-alt"></i> จองห้องประชุม&nbsp;<i class="fas fa-external-link-alt" style="font-size:11px;opacity:0.75;"></i>
-      </button>
-    </div>
-  </div>
-  
-    <div class="card">
-      <div class="calendar-header">
-        <div class="calendar-nav">
-          <button class="btn-cal-nav" onclick="pubChangeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
-          <div class="cal-month-title" id="pubCalMonthTitle"></div>
-          <button class="btn-cal-nav" onclick="pubChangeMonth(1)"><i class="fas fa-chevron-right"></i></button>
-        </div>
-        <div class="pub-filter-bar" style="margin-bottom:0;">
-          <select id="pubRoomFilter" onchange="renderPublicCalendar()">
-            <option value="">-- ทุกห้อง --</option>
-          </select>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-        <span class="status-badge status-approved"><i class="fas fa-circle" style="font-size:8px;"></i> อนุมัติแล้ว</span>
-        <span class="status-badge status-pending"><i class="fas fa-circle" style="font-size:8px;"></i> รออนุมัติ</span>
-      </div>
-
-      <div class="calendar-grid" id="pubCalendarGrid"></div>
-
-      <div style="margin-top:24px;">
-        <div class="card-title" style="border-bottom:2px solid #f0f4f8;padding-bottom:12px;margin-bottom:14px;">
-          <i class="fas fa-door-open"></i> สถานะห้องประชุม
-        </div>
-        <div id="pubRoomList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title"><i class="fas fa-clock"></i> การจองวันนี้</div>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr><th>ห้อง</th><th>หัวข้อการประชุม</th><th>เวลา</th><th>สถานะ</th></tr>
-          </thead>
-          <tbody id="pubTodayTable">
-            <tr><td colspan="4" style="text-align:center;color:#718096;padding:20px;">กำลังโหลด...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  <div class="pub-footer">© 2026 TK SENSE  &nbsp;|&nbsp; ระบบจองห้องประชุมหน่วยงาน สำนักจัดการทรัพยากรป่าไม้ที่ 7 (ขอนแก่น)</div>
-</div>
-
-<div id="mainApp">
-
-  <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-logo"><i class="fas fa-calendar-check"></i></div>
-      <div class="sidebar-title">ระบบจองห้องประชุม</div>
-      <div class="sidebar-subtitle">Meeting Room Booking</div>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="nav-section-title">เมนูหลัก</div>
-      <div class="nav-item active" onclick="showPage('dashboard')">
-        <i class="fas fa-chart-line"></i> Dashboard
-      </div>
-      <div class="nav-item" onclick="showPage('calendar')">
-        <i class="fas fa-calendar-alt"></i> ปฏิทินการจอง
-      </div>
-      <div class="nav-item" onclick="showPage('rooms')">
-        <i class="fas fa-door-open"></i> ห้องประชุม
-      </div>
-      <div class="nav-item" onclick="showPage('myBookings')">
-        <i class="fas fa-bookmark"></i> การจองของฉัน
-      </div>
-      <div class="nav-section-title" id="adminMenuTitle" style="display:none;">จัดการระบบ</div>
-      <div class="nav-item" id="allBookingsMenu" style="display:none;" onclick="showPage('allBookings')">
-        <i class="fas fa-list-alt"></i> รายการจองทั้งหมด
-        <span class="nav-badge" id="pendingBadge" style="display:none;">0</span>
-      </div>
-      <div class="nav-item" id="manageRoomsMenu" style="display:none;" onclick="showPage('manageRooms')">
-        <i class="fas fa-cog"></i> จัดการห้องประชุม
-      </div>
-      <div class="nav-item" id="manageUsersMenu" style="display:none;" onclick="showPage('manageUsers')">
-        <i class="fas fa-users-cog"></i> จัดการผู้ใช้งาน
-        <span class="pending-reg-badge" id="pendingRegBadge">0</span>
-      </div>
-      <div class="nav-item" id="settingsMenu" style="display:none;" onclick="showPage('settings')">
-        <i class="fas fa-sliders-h"></i> ตั้งค่าระบบ
-      </div>
-    </nav>
-    <div class="sidebar-footer">
-      <div id="lineOABanner" style="display:none;margin-bottom:10px;">
-        <a id="lineOALink" href="#" target="_blank"
-          style="display:flex;align-items:center;justify-content:center;gap:8px;
-                 background:#06c755;color:#fff;border-radius:10px;
-                 padding:10px 14px;font-size:13px;font-weight:700;
-                 text-decoration:none;transition:opacity 0.2s;"
-          onmouseover="this.style.opacity='0.88'"
-          onmouseout="this.style.opacity='1'">
-          <i class="fab fa-line" style="font-size:17px;"></i> ติดตาม LINE OA
-        </a>
-      </div>
-      <div class="user-info">
-        <div class="user-avatar" id="sidebarAvatar">U</div>
-        <div style="flex:1;min-width:0;">
-          <div class="user-name" id="sidebarName">ผู้ใช้งาน</div>
-          <div class="user-role" id="sidebarRole">User</div>
-        </div>
-        <button class="btn-logout" onclick="doLogout()" title="ออกจากระบบ">
-          <i class="fas fa-sign-out-alt"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="topbar">
-    <div style="display:flex;align-items:center;gap:12px;">
-      <button class="btn-mobile-menu" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-      <div class="topbar-title" id="topbarTitle">Dashboard</div>
-    </div>
-    <div class="topbar-actions">
-      <span class="topbar-date" id="topbarDate"></span>
-      <button class="btn btn-primary btn-sm" onclick="openBookingModal()">
-        <i class="fas fa-plus"></i> จองห้องประชุม
-      </button>
-    </div>
-  </div>
-
-  <div class="content-area">
-
-    <div class="page active" id="page-dashboard">
-      
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-        <h2 style="margin: 0; font-size: 24px; color: #1a3a5c;">
-          <i class="fas fa-chart-pie"></i> Dashboard วิเคราะห์การใช้งาน
-        </h2>
+    <script>
+        // 💡 ดึงพารามิเตอร์จาก URL ของ GitHub (ถ้ามี) ไปต่อท้าย Google Apps Script
+        // ช่วยให้ถ้ามีคนเข้าโดเมน Github พร้อม ?id=xxx ระบบจะส่งต่อไปได้ถูกต้อง
+        const urlParams = window.location.search;
+        const gasUrl = "https://script.google.com/macros/s/AKfycbzpSkv2IhclH2bRKJTxqHdbPgRuX4id0ht0ZB1eusgieZskHmM8LMRSbhbHkLN9qpk1pQ/exec" + urlParams;
         
-        <div style="display: flex; gap: 10px;">
-          <button class="btn-export" onclick="exportDashboardToExcel()" style="background: #107c41; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: 'Sarabun', sans-serif;">
-            <i class="fas fa-file-excel"></i> Export to Excel
-          </button>
-          
-          <button class="btn btn-outline btn-sm" onclick="loadAllData()" style="padding: 8px 16px; border-radius: 8px;">
-            <i class="fas fa-sync-alt"></i> รีเฟรช
-          </button>
-        </div>
-      </div>
-      <div class="stat-grid">
-        <div class="stat-card blue">
-          <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
-          <div><div class="stat-value" id="statTotal">0</div><div class="stat-label">การจองทั้งหมด</div></div>
-        </div>
-        <div class="stat-card green">
-          <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-          <div><div class="stat-value" id="statApproved">0</div><div class="stat-label">อนุมัติแล้ว</div></div>
-        </div>
-        <div class="stat-card orange">
-          <div class="stat-icon"><i class="fas fa-clock"></i></div>
-          <div><div class="stat-value" id="statPending">0</div><div class="stat-label">รออนุมัติ</div></div>
-        </div>
-        <div class="stat-card red">
-          <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
-          <div><div class="stat-value" id="statRejected">0</div><div class="stat-label">ไม่อนุมัติ/ยกเลิก</div></div>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;" class="chart-grid">
-        <div class="card">
-          <div class="card-title"><i class="fas fa-chart-bar"></i> สถิติการจองรายเดือน</div>
-          <canvas id="chartMonthly" height="220"></canvas>
-        </div>
-        <div class="card">
-          <div class="card-title"><i class="fas fa-chart-pie"></i> การใช้งานตามห้อง</div>
-          <canvas id="chartRooms" height="220"></canvas>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title"><i class="fas fa-history"></i> การจองล่าสุด</div>
-        
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr><th>รหัส</th><th>หัวข้อการประชุม</th><th>ห้อง</th><th>วันที่</th><th>เวลา</th><th>สถานะ</th></tr>
-            </thead>
-            <tbody id="recentBookingsTable">
-              <tr><td colspan="6" style="text-align:center;color:#718096;">กำลังโหลด...</td></tr>
-            </tbody>
-          </table>
-        </div>
-        </div>
-    </div>
-
-    <div class="page" id="page-calendar">
-      <div class="page-header">
-        <div>
-          <div class="page-title">ปฏิทินการจอง</div>
-          <div class="page-subtitle">ดูตารางการจองห้องประชุมทั้งหมด</div>
-        </div>
-        <button class="btn btn-primary" onclick="openBookingModal()">
-          <i class="fas fa-plus"></i> จองห้องประชุม
-        </button>
-      </div>
-      <div class="card">
-        <div class="calendar-header">
-          <div class="calendar-nav">
-            <button class="btn-cal-nav" onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
-            <div class="cal-month-title" id="calMonthTitle"></div>
-            <button class="btn-cal-nav" onclick="changeMonth(1)"><i class="fas fa-chevron-right"></i></button>
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <span class="status-badge status-pending"><i class="fas fa-circle" style="font-size:8px;"></i> รออนุมัติ</span>
-            <span class="status-badge status-approved"><i class="fas fa-circle" style="font-size:8px;"></i> อนุมัติแล้ว</span>
-            <span class="status-badge status-rejected"><i class="fas fa-circle" style="font-size:8px;"></i> ไม่อนุมัติ</span>
-          </div>
-        </div>
-        <div class="calendar-grid" id="calendarGrid"></div>
-      </div>
-    </div>
-
-    <div class="page" id="page-rooms">
-      <div class="page-header">
-        <div>
-          <div class="page-title">ห้องประชุม</div>
-          <div class="page-subtitle">รายการห้องประชุมทั้งหมด</div>
-        </div>
-        <button class="btn btn-primary" onclick="openBookingModal()">
-          <i class="fas fa-plus"></i> จองห้องประชุม
-        </button>
-      </div>
-      <div class="room-grid" id="roomGrid"><p style="color:#718096;">กำลังโหลด...</p></div>
-    </div>
-
-    <div class="page" id="page-myBookings">
-      <div class="page-header">
-        <div>
-          <div class="page-title">การจองของฉัน</div>
-          <div class="page-subtitle">รายการจองห้องประชุมของคุณ</div>
-        </div>
-        <button class="btn btn-primary" onclick="openBookingModal()">
-          <i class="fas fa-plus"></i> จองห้องใหม่
-        </button>
-      </div>
-      <div class="card">
-        <div class="filter-bar">
-          <input type="text" id="myBookingSearch" placeholder="ค้นหาหัวข้อ..." oninput="filterMyBookings()">
-          <select id="myBookingStatus" onchange="filterMyBookings()">
-            <option value="">-- ทุกสถานะ --</option>
-            <option value="Pending">รออนุมัติ</option>
-            <option value="Approved">อนุมัติแล้ว</option>
-            <option value="Rejected">ไม่อนุมัติ</option>
-            <option value="Cancelled">ยกเลิก</option>
-          </select>
-        </div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr><th>รหัส</th><th>หัวข้อ</th><th>ห้อง</th><th>วันที่</th><th>เวลา</th><th>สถานะ</th><th>หมายเหตุ</th><th>จัดการ</th></tr>
-            </thead>
-            <tbody id="myBookingsTable">
-              <tr><td colspan="8" style="text-align:center;color:#718096;">กำลังโหลด...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="page" id="page-allBookings">
-      <div class="page-header">
-        <div>
-          <div class="page-title">รายการจองทั้งหมด</div>
-          <div class="page-subtitle">จัดการและอนุมัติการจองห้องประชุม</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="filter-bar">
-          <input type="text" id="allBookingSearch" placeholder="ค้นหา..." oninput="filterAllBookings()">
-          <select id="allBookingStatus" onchange="filterAllBookings()">
-            <option value="">-- ทุกสถานะ --</option>
-            <option value="Pending">รออนุมัติ</option>
-            <option value="Approved">อนุมัติแล้ว</option>
-            <option value="Rejected">ไม่อนุมัติ</option>
-            <option value="Cancelled">ยกเลิก</option>
-          </select>
-          <select id="allBookingRoom" onchange="filterAllBookings()">
-            <option value="">-- ทุกห้อง --</option>
-          </select>
-          <input type="date" id="allBookingDate" onchange="filterAllBookings()" title="กรองตามวันที่">
-        </div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr><th>รหัส</th><th>ผู้จอง</th><th>หัวข้อ</th><th>ห้อง</th><th>ฝ่าย/ส่วน</th><th>วันที่</th><th>เวลา</th><th>สถานะ</th><th>จัดการ</th></tr>
-            </thead>
-            <tbody id="allBookingsTable">
-              <tr><td colspan="9" style="text-align:center;color:#718096;">กำลังโหลด...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="page" id="page-manageRooms">
-      <div class="page-header">
-        <div>
-          <div class="page-title">จัดการห้องประชุม</div>
-          <div class="page-subtitle">เพิ่ม แก้ไข และลบห้องประชุม</div>
-        </div>
-        <button class="btn btn-primary" onclick="openRoomModal()">
-          <i class="fas fa-plus"></i> เพิ่มห้องใหม่
-        </button>
-      </div>
-      <div class="card">
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr><th>รหัส</th><th>ชื่อห้อง</th><th>ความจุ</th><th>รายละเอียด</th><th>สถานะ</th><th>จัดการ</th></tr>
-            </thead>
-            <tbody id="manageRoomsTable">
-              <tr><td colspan="6" style="text-align:center;color:#718096;">กำลังโหลด...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="page" id="page-manageUsers">
-      <div class="page-header">
-        <div>
-          <div class="page-title">จัดการผู้ใช้งาน</div>
-          <div class="page-subtitle">เพิ่ม แก้ไข และจัดการสิทธิ์ผู้ใช้งาน</div>
-        </div>
-        <button class="btn btn-primary" onclick="openUserModal()">
-          <i class="fas fa-plus"></i> เพิ่มผู้ใช้ใหม่
-        </button>
-      </div>
-
-      <div id="pendingRegSection" style="display:none;">
-        <div class="card" style="border-left:4px solid #f59e0b;">
-          <div class="card-title" style="color:#92400e;">
-            <i class="fas fa-user-clock" style="color:#f59e0b;"></i>
-            คำขอสมัครสมาชิกรออนุมัติ
-            <span id="pendingRegCount" style="background:#f59e0b;color:#fff;font-size:12px;padding:2px 10px;border-radius:20px;font-weight:700;margin-left:8px;">0</span>
-          </div>
-          <div id="pendingRegList"></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>อีเมล</th><th>แผนก</th><th>สิทธิ์</th><th>จัดการ</th></tr>
-            </thead>
-            <tbody id="manageUsersTable">
-              <tr><td colspan="6" style="text-align:center;color:#718096;">กำลังโหลด...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="page" id="page-settings">
-      <div class="page-header">
-        <div>
-          <div class="page-title">ตั้งค่าระบบ</div>
-          <div class="page-subtitle">ตั้งค่า LINE OA และ Power BI</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title"><i class="fab fa-line" style="color:#06c755;"></i> ตั้งค่า LINE OA (Messaging API)
-          <span id="lineStatusBadge" style="margin-left:10px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;background:#f3f4f6;color:#6b7280;">ยังไม่ตั้งค่า</span>
-        </div>
-
-        <div class="form-group-modal">
-          <label>Channel Access Token <span style="color:#718096;font-weight:400;font-size:12px;">(สำหรับส่งแจ้งเตือนอัตโนมัติ)</span></label>
-          <input type="text" id="lineChannelToken" placeholder="ใส่ Channel Access Token ที่นี่" oninput="updateLineStatusBadge()">
-        </div>
-
-        <div class="form-group-modal">
-          <label>LINE Group ID <span style="color:red;">*</span>
-            <span style="color:#718096;font-weight:400;font-size:12px;">(ID ของกลุ่มที่ Bot เป็นสมาชิก — ขึ้นต้นด้วย C...)</span>
-          </label>
-          <div style="display:flex;gap:10px;align-items:center;">
-            <input type="text" id="lineGroupId" placeholder="C1234567890abcdef1234567890abcde" style="flex:1;font-family:monospace;font-size:13px;" oninput="updateLineStatusBadge()">
-            <button class="btn btn-sm" onclick="testLineGroup()"
-              style="background:#06c755;color:#fff;white-space:nowrap;flex-shrink:0;" title="ส่งข้อความทดสอบไปยังกลุ่ม LINE">
-              <i class="fas fa-paper-plane"></i> ทดสอบ
-            </button>
-          </div>
-        </div>
-
-        <div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;padding:12px 16px;font-size:13px;color:#92400e;margin-bottom:16px;line-height:1.9;">
-          <b><i class="fas fa-lightbulb"></i> วิธีหา LINE Group ID:</b><br>
-          1. เพิ่ม LINE Bot เป็นสมาชิกในกลุ่มที่ต้องการ<br>
-          2. ไปที่ <a href="https://developers.line.biz" target="_blank" style="color:#92400e;font-weight:700;">LINE Developers Console</a> → Messaging API → Webhook URL<br>
-          3. ตั้ง Webhook URL เป็น URL ของ Apps Script นี้<br>
-          4. ส่งข้อความใดก็ได้ในกลุ่ม → ดู Webhook log → หา <b>source.groupId</b> (ขึ้นต้น C...)<br>
-          <span style="color:#b45309;">⚠️ หรือใช้เครื่องมือ <a href="https://webhook.site" target="_blank" style="color:#b45309;font-weight:700;">webhook.site</a> รับ event แล้วคัดลอก groupId</span>
-        </div>
-
-        <div class="form-group-modal">
-          <label>LINE OA Add Friend URL <span style="color:#718096;font-weight:400;font-size:12px;">(ลิงก์ให้ผู้ใช้ติดตาม OA)</span></label>
-          <div style="display:flex;gap:10px;align-items:center;">
-            <input type="text" id="lineOAUrl" placeholder="https://line.me/R/ti/p/@xxxxxxxxx" style="flex:1;">
-            <button class="btn btn-outline btn-sm" onclick="testLineOAUrl()" title="ทดสอบลิงก์">
-              <i class="fas fa-external-link-alt"></i> ทดสอบ
-            </button>
-          </div>
-        </div>
-
-        <div style="background:#f0fff4;border:1.5px solid #c6f6d5;border-radius:10px;padding:12px 16px;font-size:13px;color:#276749;margin-top:4px;line-height:1.8;">
-          <b><i class="fas fa-info-circle"></i> วิธีตั้งค่า LINE OA Channel:</b><br>
-          1. ไปที่ <a href="https://developers.line.biz" target="_blank" style="color:#276749;font-weight:700;">LINE Developers Console</a><br>
-          2. เลือก Channel → แท็บ <b>Messaging API</b><br>
-          3. เลื่อนหา <b>Channel access token</b> → คลิก <b>Issue</b><br>
-          4. นำ Token มาวางในช่องด้านบน และตั้ง <b>Auto-reply</b> = Disabled
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title"><i class="fas fa-chart-area"></i> ตั้งค่า Power BI Dashboard</div>
-        <div class="form-group-modal">
-          <label>Power BI Embed URL</label>
-          <input type="text" id="powerBiUrl" placeholder="https://app.powerbi.com/reportEmbed?...">
-        </div>
-        <div style="margin-top:20px;" id="powerBiPreview"></div>
-      </div>
-
-      <button class="btn btn-success" onclick="saveSettings()">
-        <i class="fas fa-save"></i> บันทึกการตั้งค่าทั้งหมด
-      </button>
-    </div>
-
-  </div>
-</div>
-
-<div class="modal-overlay" id="bookingModal">
-  <div class="modal" style="max-width:560px;">
-    <div class="modal-header">
-      <div class="modal-title" id="bookingModalTitle"><i class="fas fa-calendar-plus"></i> จองห้องประชุม</div>
-      <button class="modal-close" onclick="closeModal('bookingModal')">&times;</button>
-    </div>
-    <input type="hidden" id="editBookingId">
-
-    <div class="form-group-modal">
-      <label>หัวข้อการประชุม <span style="color:red;">*</span></label>
-      <input type="text" id="bookingTitle" placeholder="ระบุหัวข้อการประชุม" maxlength="200">
-    </div>
-
-    <div class="form-row">
-      <div class="form-group-modal">
-        <label>ห้องประชุม <span style="color:red;">*</span></label>
-        <select id="bookingRoom" onchange="checkRoomAvailability()">
-          <option value="">-- เลือกห้องประชุม --</option>
-        </select>
-      </div>
-      <div class="form-group-modal">
-        <label>วันที่ <span style="color:red;">*</span></label>
-        <input type="date" id="bookingDate" onchange="checkRoomAvailability()">
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group-modal">
-        <label>เวลาเริ่ม <span style="color:red;">*</span></label>
-        <input type="time" id="bookingStart" onchange="checkRoomAvailability()">
-      </div>
-      <div class="form-group-modal">
-        <label>เวลาสิ้นสุด <span style="color:red;">*</span></label>
-        <input type="time" id="bookingEnd" onchange="checkRoomAvailability()">
-      </div>
-    </div>
-
-    <div id="bookedSlotsInfo" style="display:none;background:#fff8e1;border:1px solid #ffc107;border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;">
-      <b><i class="fas fa-info-circle" style="color:#f59e0b;"></i> การจองที่มีอยู่ในวันและห้องนี้:</b>
-      <div id="bookedSlotsList" style="margin-top:8px;"></div>
-    </div>
-
-    <div style="border-top:1.5px dashed #e2e8f0;margin:4px 0 16px;"></div>
-    <div style="font-size:12px;font-weight:700;color:#1a3a5c;letter-spacing:1px;margin-bottom:12px;">
-      <i class="fas fa-id-card"></i> ข้อมูลผู้จองและหน่วยงาน
-    </div>
-
-    <div class="form-row">
-      <div class="form-group-modal">
-        <label>ฝ่าย/ส่วน/หน่วยงาน <span style="color:red;">*</span></label>
-        <input type="text" id="bookingDepartment" placeholder="เช่น ฝ่ายบริหาร, กองแผนงาน" maxlength="100">
-      </div>
-      <div class="form-group-modal">
-        <label>ชื่อผู้ประสานงาน <span style="color:red;">*</span></label>
-        <input type="text" id="bookingBookerName" placeholder="ชื่อ-นามสกุลผู้ประสานงาน" maxlength="100">
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group-modal">
-        <label>เบอร์โทรติดต่อ <span style="color:red;">*</span></label>
-        <input type="tel" id="bookingPhone" placeholder="เช่น 081-234-5678" maxlength="20">
-      </div>
-      <div class="form-group-modal">
-        <label>จำนวนผู้เข้าร่วมประชุม</label>
-        <input type="number" id="bookingAttendees" placeholder="จำนวน (คน)" min="1" max="500">
-      </div>
-    </div>
-
-    <div class="form-group-modal">
-      <label>อุปกรณ์/สิ่งที่ต้องการเพิ่มเติม</label>
-      <input type="text" id="bookingEquipment" placeholder="เช่น โปรเจคเตอร์, ไมโครโฟน, น้ำดื่ม" maxlength="200">
-    </div>
-
-    <div class="form-group-modal">
-      <label>หมายเหตุ</label>
-      <textarea id="bookingRemark" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)" maxlength="500" rows="2"></textarea>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('bookingModal')">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="saveBooking()" id="saveBookingBtn">
-        <i class="fas fa-save"></i> บันทึกการจอง
-      </button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="bookingDetailModal">
-  <div class="modal" style="max-width:520px;">
-    <div class="modal-header" id="bookingDetailHeader">
-      <div class="modal-title"><i class="fas fa-calendar-check"></i> รายละเอียดการจอง</div>
-      <button class="modal-close" onclick="closeModal('bookingDetailModal')">&times;</button>
-    </div>
-    <div id="bookingDetailBody"></div>
-    <div class="modal-footer" id="bookingDetailFooter">
-      <button class="btn btn-outline" onclick="closeModal('bookingDetailModal')">ปิด</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="dayBookingsModal">
-  <div class="modal" style="max-width:540px;">
-    <div class="modal-header">
-      <div class="modal-title" id="dayBookingsTitle"><i class="fas fa-calendar-day"></i> การจองในวันนี้</div>
-      <button class="modal-close" onclick="closeModal('dayBookingsModal')">&times;</button>
-    </div>
-    <div id="dayBookingsList" style="max-height:420px;overflow-y:auto;"></div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('dayBookingsModal')">ปิด</button>
-      <button class="btn btn-primary" id="dayBookingsNewBtn" onclick="newBookingFromDay()">
-        <i class="fas fa-plus"></i> จองวันนี้
-      </button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="approveModal">
-  <div class="modal" style="max-width:420px;">
-    <div class="modal-header">
-      <div class="modal-title" id="approveModalTitle"><i class="fas fa-check-circle"></i> อนุมัติการจอง</div>
-      <button class="modal-close" onclick="closeModal('approveModal')">&times;</button>
-    </div>
-    <input type="hidden" id="approveBookingId">
-    <input type="hidden" id="approveAction">
-    <div id="approveBookingInfo" style="background:#f7fafc;border-radius:10px;padding:16px;margin-bottom:16px;font-size:14px;line-height:1.8;"></div>
-    <div class="form-group-modal">
-      <label>หมายเหตุ (ถ้ามี)</label>
-      <textarea id="approveRemark" placeholder="ระบุเหตุผล (กรณีไม่อนุมัติ)" maxlength="300"></textarea>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('approveModal')">ยกเลิก</button>
-      <button class="btn btn-success" id="approveBtn" onclick="confirmApprove()">
-        <i class="fas fa-check"></i> ยืนยัน
-      </button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="roomModal">
-  <div class="modal" style="max-width:480px;">
-    <div class="modal-header">
-      <div class="modal-title" id="roomModalTitle"><i class="fas fa-door-open"></i> เพิ่มห้องประชุม</div>
-      <button class="modal-close" onclick="closeModal('roomModal')">&times;</button>
-    </div>
-    <input type="hidden" id="editRoomId">
-    <div class="form-group-modal">
-      <label>ชื่อห้องประชุม <span style="color:red;">*</span></label>
-      <input type="text" id="roomName" placeholder="ชื่อห้องประชุม" maxlength="100">
-    </div>
-    <div class="form-row">
-      <div class="form-group-modal">
-        <label>ความจุ (คน) <span style="color:red;">*</span></label>
-        <input type="number" id="roomCapacity" placeholder="จำนวนที่นั่ง" min="1" max="9999">
-      </div>
-      <div class="form-group-modal">
-        <label>สถานะ</label>
-        <select id="roomStatus">
-          <option value="Active">เปิดใช้งาน</option>
-          <option value="Inactive">ปิดใช้งาน</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group-modal">
-      <label>รายละเอียด</label>
-      <textarea id="roomDetails" placeholder="สิ่งอำนวยความสะดวก เช่น โปรเจคเตอร์, Video Conference..." maxlength="500"></textarea>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('roomModal')">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="saveRoom()"><i class="fas fa-save"></i> บันทึก</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="userModal">
-  <div class="modal" style="max-width:480px;">
-    <div class="modal-header">
-      <div class="modal-title" id="userModalTitle"><i class="fas fa-user-plus"></i> เพิ่มผู้ใช้งาน</div>
-      <button class="modal-close" onclick="closeModal('userModal')">&times;</button>
-    </div>
-    <input type="hidden" id="editUserId">
-    <div class="form-group-modal">
-      <label>ชื่อ-นามสกุล <span style="color:red;">*</span></label>
-      <input type="text" id="userName" placeholder="ชื่อ-นามสกุล" maxlength="100">
-    </div>
-    <div class="form-group-modal">
-      <label>อีเมล <span style="color:red;">*</span></label>
-      <input type="email" id="userEmail" placeholder="อีเมล">
-    </div>
-    <div class="form-row">
-      <div class="form-group-modal">
-        <label>รหัสผ่าน <span style="color:red;" id="pwdRequired">*</span></label>
-        <input type="password" id="userPassword" placeholder="รหัสผ่าน (ว่างไว้ = ไม่เปลี่ยน)">
-      </div>
-      <div class="form-group-modal">
-        <label>สิทธิ์การใช้งาน</label>
-        <select id="userRole">
-          <option value="User">User (ผู้ใช้งาน)</option>
-          <option value="Manager">Manager (ผู้ดูแล)</option>
-          <option value="Admin">Admin (ผู้ดูแลระบบ)</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group-modal">
-        <label>แผนก/หน่วยงาน</label>
-        <input type="text" id="userDepartment" placeholder="เช่น IT, บัญชี" maxlength="100">
-      </div>
-      <div class="form-group-modal">
-        <label>เบอร์โทรศัพท์</label>
-        <input type="tel" id="userPhone" placeholder="เช่น 081-234-5678" maxlength="20">
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('userModal')">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="saveUser()"><i class="fas fa-save"></i> บันทึก</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="approveUserModal">
-  <div class="modal" style="max-width:420px;">
-    <div class="modal-header">
-      <div class="modal-title"><i class="fas fa-user-check" style="color:#38a169;"></i> อนุมัติสมาชิกใหม่</div>
-      <button class="modal-close" onclick="closeModal('approveUserModal')">&times;</button>
-    </div>
-    <input type="hidden" id="approveUserId">
-    <div id="approveUserInfo" style="background:#f7fafc;border-radius:10px;padding:16px;margin-bottom:18px;font-size:14px;line-height:2;"></div>
-    <div class="form-group-modal">
-      <label>กำหนดสิทธิ์การใช้งาน <span style="color:red;">*</span></label>
-      <select id="approveUserRole" style="width:100%;padding:11px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Sarabun',sans-serif;outline:none;">
-        <option value="User">User — ผู้ใช้งานทั่วไป (จองห้องได้)</option>
-        <option value="Manager">Manager — ผู้ดูแล (อนุมัติการจองได้)</option>
-        <option value="Admin">Admin — ผู้ดูแลระบบ (จัดการทั้งหมด)</option>
-      </select>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('approveUserModal')">ยกเลิก</button>
-      <button class="btn btn-success" onclick="confirmApproveUser()">
-        <i class="fas fa-check"></i> อนุมัติ
-      </button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="confirmModal">
-  <div class="modal" style="max-width:380px;text-align:center;">
-    <div style="font-size:52px;color:#e53e3e;margin-bottom:16px;"><i class="fas fa-exclamation-triangle"></i></div>
-    <div class="modal-title" style="margin-bottom:10px;">ยืนยันการดำเนินการ</div>
-    <p style="color:#718096;font-size:14px;margin-bottom:24px;" id="confirmMsg">คุณต้องการลบข้อมูลนี้ใช่หรือไม่?</p>
-    <div style="display:flex;gap:10px;justify-content:center;">
-      <button class="btn btn-outline" onclick="closeModal('confirmModal')">ยกเลิก</button>
-      <button class="btn btn-danger" id="confirmOkBtn">ยืนยัน</button>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-  var SCRIPT_URL = '<?= scriptUrl ?>';
-  var SERVER_MODE = '<?= mode ?>';
-</script>
-
-<?!= include('JavaScript'); ?>
-
+        document.getElementById("main-frame").src = gasUrl;
+    </script>
 </body>
 </html>
