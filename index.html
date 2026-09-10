@@ -1590,7 +1590,7 @@ body.public-mode #publicCalendar {
 <script>
 // ==================== CONFIG (GitHub Pages) ====================
 // ใส่ URL ของ Apps Script Web App ที่ deploy แล้ว (ลงท้ายด้วย /exec)
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzpSkv2IhclH2bRKJTxqHdbPgRuX4id0ht0ZB1eusgieZskHmM8LMRSbhbHkLN9qpk1pQ/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycb.../exec';
 
 // อ่านโหมดจาก query string เช่น ?mode=login หรือ ?mode=public
 var SERVER_MODE = new URLSearchParams(window.location.search).get('mode') || 'default';
@@ -1631,9 +1631,28 @@ var SERVER_MODE = new URLSearchParams(window.location.search).get('mode') || 'de
     var encoded = encodeURIComponent(encodeURIComponent(JSON.stringify(params)));
     var url = SCRIPT_URL + '?action=' + encodeURIComponent(action) + '&params=' + encoded;
 
-    fetch(url)
-      .then(function (res) { return res.json(); })
-      .then(function (json) {
+    // [FIX] กัน loading ค้างตลอดกาล: ถ้าไม่ตอบใน 20 วิ ตัดจบเอง แจ้ง error ทันที
+    var controller = new AbortController();
+    var timedOut = false;
+    var timer = setTimeout(function () {
+      timedOut = true;
+      controller.abort();
+    }, 20000);
+
+    fetch(url, { signal: controller.signal })
+      .then(function (res) {
+        clearTimeout(timer);
+        if (!res.ok) throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด (HTTP ' + res.status + ')');
+        return res.text();
+      })
+      .then(function (text) {
+        var json;
+        try {
+          json = JSON.parse(text);
+        } catch (e) {
+          // ได้ HTML/ข้อความอื่นกลับมาแทน JSON มักแปลว่า SCRIPT_URL ผิด หรือสิทธิ์ deploy ไม่ใช่ Anyone
+          throw new Error('SCRIPT_URL ผิด หรือ Deploy GAS ยังไม่ใช่สิทธิ์ Anyone (ได้ข้อมูลที่ไม่ใช่ JSON กลับมา)');
+        }
         if (json.success) {
           onSuccess(json.data);
         } else {
@@ -1641,7 +1660,12 @@ var SERVER_MODE = new URLSearchParams(window.location.search).get('mode') || 'de
         }
       })
       .catch(function (err) {
-        onFailure({ message: err.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' });
+        clearTimeout(timer);
+        if (timedOut) {
+          onFailure({ message: 'เชื่อมต่อเซิร์ฟเวอร์นานเกิน 20 วิ กรุณาเช็ค SCRIPT_URL ใน config.js' });
+        } else {
+          onFailure({ message: err.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' });
+        }
       });
   }
 
