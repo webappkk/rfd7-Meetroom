@@ -1590,17 +1590,16 @@ body.public-mode #publicCalendar {
 <script>
 // ==================== CONFIG (GitHub Pages) ====================
 // ใส่ URL ของ Apps Script Web App ที่ deploy แล้ว (ลงท้ายด้วย /exec)
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycb.../exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzpSkv2IhclH2bRKJTxqHdbPgRuX4id0ht0ZB1eusgieZskHmM8LMRSbhbHkLN9qpk1pQ/exec';
 
 // อ่านโหมดจาก query string เช่น ?mode=login หรือ ?mode=public
 var SERVER_MODE = new URLSearchParams(window.location.search).get('mode') || 'default';
 
-// ==================== GAS BRIDGE (GitHub Pages) ====================
-// จำลอง google.script.run ให้เรียก Apps Script Web App ผ่าน fetch
-// ให้ทำงานได้เหมือนเดิมทุกจุดที่โค้ดเดิมเรียก google.script.run.withSuccessHandler(...)...func(args)
+// ==================== GAS BRIDGE (GitHub Pages, JSONP) ====================
+// จำลอง google.script.run ให้เรียก Apps Script Web App ผ่าน JSONP (<script> tag)
+// เลี่ยงปัญหา CORS ที่เกิดกับ fetch ข้าม origin (GitHub Pages -> script.google.com) โดยสิ้นเชิง
 
 (function () {
-  // ชื่อ action ที่ args เป็นค่าเดี่ยว (ไม่ใช่ object) ต้อง map ชื่อ param ให้ตรงกับ routeAction ใน Code.gs
   var ARG_MAP = {
     login: ['email', 'password'],
     approveUser: ['userId', 'role'],
@@ -1624,49 +1623,52 @@ var SERVER_MODE = new URLSearchParams(window.location.search).get('mode') || 'de
     return obj2;
   }
 
+  var _seq = 0;
+
   function callServer(action, args, onSuccess, onFailure) {
     var params = argsToParams(action, args);
     // ตรงกับฝั่ง Code.gs: decodeURIComponent(param.params) หลัง GAS decode ให้เองชั้นนึงแล้ว
     // จึงต้อง encode 2 ชั้นจากฝั่ง client
     var encoded = encodeURIComponent(encodeURIComponent(JSON.stringify(params)));
-    var url = SCRIPT_URL + '?action=' + encodeURIComponent(action) + '&params=' + encoded;
 
-    // [FIX] กัน loading ค้างตลอดกาล: ถ้าไม่ตอบใน 20 วิ ตัดจบเอง แจ้ง error ทันที
-    var controller = new AbortController();
-    var timedOut = false;
+    _seq++;
+    var cbName = '__gasCb_' + Date.now() + '_' + _seq;
+    var done = false;
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = function (responseObj) {
+      if (done) return;
+      done = true;
+      cleanup();
+      if (responseObj && responseObj.success) {
+        onSuccess(responseObj.data);
+      } else {
+        onFailure({ message: (responseObj && responseObj.error) || 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์' });
+      }
+    };
+
     var timer = setTimeout(function () {
-      timedOut = true;
-      controller.abort();
+      if (done) return;
+      done = true;
+      cleanup();
+      onFailure({ message: 'เชื่อมต่อ GAS ไม่สำเร็จภายใน 20 วิ กรุณาตรวจ SCRIPT_URL ใน config.js และสิทธิ์ Deploy (ต้องเป็น Anyone)' });
     }, 20000);
 
-    fetch(url, { signal: controller.signal })
-      .then(function (res) {
-        clearTimeout(timer);
-        if (!res.ok) throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด (HTTP ' + res.status + ')');
-        return res.text();
-      })
-      .then(function (text) {
-        var json;
-        try {
-          json = JSON.parse(text);
-        } catch (e) {
-          // ได้ HTML/ข้อความอื่นกลับมาแทน JSON มักแปลว่า SCRIPT_URL ผิด หรือสิทธิ์ deploy ไม่ใช่ Anyone
-          throw new Error('SCRIPT_URL ผิด หรือ Deploy GAS ยังไม่ใช่สิทธิ์ Anyone (ได้ข้อมูลที่ไม่ใช่ JSON กลับมา)');
-        }
-        if (json.success) {
-          onSuccess(json.data);
-        } else {
-          onFailure({ message: json.error || 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์' });
-        }
-      })
-      .catch(function (err) {
-        clearTimeout(timer);
-        if (timedOut) {
-          onFailure({ message: 'เชื่อมต่อเซิร์ฟเวอร์นานเกิน 20 วิ กรุณาเช็ค SCRIPT_URL ใน config.js' });
-        } else {
-          onFailure({ message: err.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' });
-        }
-      });
+    var script = document.createElement('script');
+    script.src = SCRIPT_URL + '?action=' + encodeURIComponent(action) +
+      '&params=' + encoded + '&callback=' + cbName;
+    script.onerror = function () {
+      if (done) return;
+      done = true;
+      cleanup();
+      onFailure({ message: 'โหลดสคริปต์จาก GAS ไม่สำเร็จ ตรวจ SCRIPT_URL ให้ถูกต้อง (ต้องลงท้ายด้วย /exec)' });
+    };
+    document.body.appendChild(script);
   }
 
   function createRunner() {
